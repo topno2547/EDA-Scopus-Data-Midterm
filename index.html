@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Keyword Analytics Dashboard</title>
+  
+  <!-- Tailwind CSS via CDN for styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Plotly.js for Charts -->
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  
+  <!-- Vis Network for Graph -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
+  
+  <!-- Feather Icons for lightweight icons -->
+  <script src="https://unpkg.com/feather-icons"></script>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    body { 
+      font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+      background-color: #f8fafc; 
+      color: #0f172a; 
+    }
+  </style>
+</head>
+<body class="p-4 md:p-8 lg:p-12">
+
+<div class="max-w-6xl mx-auto">
+  
+  <header class="mb-12 text-center space-y-4 pt-4">
+    <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
+      Keyword Analytics Dashboard
+    </h1>
+    <p class="text-lg text-slate-500 max-w-2xl mx-auto font-medium">
+      Comprehensive multi-dimensional analysis of the Computer Science Scopus dataset, visualizing trends, popularity, and thematic relationships.
+    </p>
+  </header>
+
+  <!-- Card 1: Treemap -->
+  <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-8 transition-all hover:shadow-md">
+    <div class="flex items-center gap-3 mb-3">
+      <div class="p-2.5 bg-blue-50 rounded-xl text-blue-600">
+        <i data-feather="bar-chart-2"></i>
+      </div>
+      <h2 class="text-xl font-bold text-slate-800">1. Keyword Treemap (สัดส่วนความนิยม)</h2>
+    </div>
+    <p class="text-slate-500 mb-6 text-sm">A quick overview of keyword popularity. Larger and darker boxes represent words that appear most frequently in research.</p>
+    <div id="treemap" class="w-full h-[500px]"></div>
+  </div>
+
+  <!-- Card 2: Theme River -->
+  <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-8 transition-all hover:shadow-md">
+    <div class="flex items-center gap-3 mb-3">
+      <div class="p-2.5 bg-blue-50 rounded-xl text-blue-600">
+        <i data-feather="activity"></i>
+      </div>
+      <h2 class="text-xl font-bold text-slate-800">2. Keyword Theme River (กระแสเทรนด์)</h2>
+    </div>
+    <p class="text-slate-500 mb-6 text-sm">Analyzes the evolution of the top 10 most popular keywords over time. Thickness indicates the volume of articles each year.</p>
+    <div id="themeriver" class="w-full h-[500px]"></div>
+  </div>
+
+  <!-- Card 3: Heatmap -->
+  <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-8 transition-all hover:shadow-md">
+    <div class="flex items-center gap-3 mb-3">
+      <div class="p-2.5 bg-blue-50 rounded-xl text-blue-600">
+        <i data-feather="trending-up"></i>
+      </div>
+      <h2 class="text-xl font-bold text-slate-800">3. Keyword Trend Heatmap (ตารางความหนาแน่น)</h2>
+    </div>
+    <p class="text-slate-500 mb-6 text-sm">Detailed density and growth rate of keywords for each year.</p>
+    <div id="heatmap" class="w-full h-[600px]"></div>
+  </div>
+
+  <!-- Card 4: Quadrant -->
+  <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-8 transition-all hover:shadow-md">
+    <div class="flex items-center gap-3 mb-3">
+      <div class="p-2.5 bg-blue-50 rounded-xl text-blue-600">
+        <i data-feather="crosshair"></i>
+      </div>
+      <h2 class="text-xl font-bold text-slate-800">4. Emerging Keyword Quadrant (วิเคราะห์ดาวรุ่ง)</h2>
+    </div>
+    <p class="text-slate-500 mb-6 text-sm">Analyzes emerging keywords versus established ones. The X-axis is the growth rate, and the Y-axis is the current frequency.</p>
+    <div id="quadrant" class="w-full h-[600px]"></div>
+  </div>
+
+  <!-- Card 5: Network -->
+  <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-8 transition-all hover:shadow-md">
+    <div class="flex items-center gap-3 mb-3">
+      <div class="p-2.5 bg-blue-50 rounded-xl text-blue-600">
+        <i data-feather="share-2"></i>
+      </div>
+      <h2 class="text-xl font-bold text-slate-800">5. Keyword Co-occurrence Network (เครือข่ายความสัมพันธ์)</h2>
+    </div>
+    <p class="text-slate-500 mb-6 text-sm">Relationship network of keywords. Colors indicate the average publication year (warm tones = recent, cool tones = older). Use the dropdown to highlight specific terms.</p>
+    
+    <div class="flex flex-col sm:flex-row gap-4 items-center mb-6">
+      <select id="node-select" class="p-2.5 border border-slate-300 rounded-lg shadow-sm w-full sm:w-72 bg-white text-slate-700 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all cursor-pointer">
+        <option value="">Select a keyword to highlight...</option>
+      </select>
+      <button id="reset-btn" class="w-full sm:w-auto px-4 py-2.5 bg-blue-50 text-blue-600 rounded-lg font-medium hover:bg-blue-100 transition-colors cursor-pointer">
+        Reset View
+      </button>
+    </div>
+    
+    <div id="network" class="w-full h-[600px] bg-slate-50/50 rounded-xl border border-slate-200 shadow-inner overflow-hidden cursor-move"></div>
+  </div>
+
+</div>
+
+<script>
+  // Initialize Feather Icons
+  feather.replace();
+
+  // Plotly Layout Defaults
+  const layoutDefaults = {
+    paper_bgcolor: 'transparent',
+    plot_bgcolor: 'transparent',
+    autosize: true,
+    font: { family: 'Inter, system-ui, sans-serif', color: '#475569' }
+  };
+  const config = { responsive: true };
+
+  // 1. Treemap Data
+  const treemapData = [{
+    type: "treemap",
+    labels: ["anomaly detection","artificial intelligence","attention mechanism","cad","classification","computer vision","computer-aided design","contrastive learning","convolutional neural network","convolutional neural networks","cybersecurity","data augmentation","deep learning","digital twin","edge computing","eeg","electrocardiogram","electroencephalogram","electroencephalography","emotion recognition","explainable ai","federated learning","fpga","generative ai","graph neural network","graph neural networks","human-computer interaction","internet of things","knowledge distillation","large language model","large language models","machine learning","multimodal fusion","neural networks","reinforcement learning","self-supervised learning","spiking neural networks","transfer learning","transformer","virtual reality","Top Keywords"],
+    parents: ["Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords","Top Keywords",""],
+    values: [40,214,56,41,41,67,57,50,49,31,36,34,386,32,57,68,30,35,40,54,48,95,58,62,35,48,35,33,31,39,87,222,34,39,55,41,32,40,65,71,2588],
+    branchvalues: "total",
+    textinfo: "label+value",
+    textfont: { size: 14 },
+    marker: {
+      colors: [40,214,56,41,41,67,57,50,49,31,36,34,386,32,57,68,30,35,40,54,48,95,58,62,35,48,35,33,31,39,87,222,34,39,55,41,32,40,65,71,2588],
+      colorscale: [[0.0,"rgb(209, 238, 234)"],[0.16666666666666666,"rgb(168, 219, 217)"],[0.3333333333333333,"rgb(133, 196, 201)"],[0.5,"rgb(104, 171, 184)"],[0.6666666666666666,"rgb(79, 144, 166)"],[0.8333333333333334,"rgb(59, 115, 143)"],[1.0,"rgb(42, 86, 116)"]]
+    }
+  }];
+  Plotly.newPlot('treemap', treemapData, { ...layoutDefaults, margin: { t: 0, l: 0, r: 0, b: 0 } }, config);
+
+  // 2. Theme River Data
+  const themeRiverData = [
+    { name: "artificial intelligence", x: [2015,2017,2018,2020,2021,2022,2023,2024,2025,2026,2027], y: [1,2,1,2,3,3,7,16,8,60,111], stackgroup: "1", mode: "lines", line: {color: "rgb(102, 197, 204)"}, fillpattern: {shape: ""} },
+    { name: "virtual reality", x: [2016,2020,2022,2023,2024,2025,2026,2027], y: [1,1,1,2,17,6,36,7], stackgroup: "1", mode: "lines", line: {color: "rgb(246, 207, 113)"}, fillpattern: {shape: ""} },
+    { name: "computer vision", x: [2017,2018,2023,2024,2025,2026,2027], y: [1,1,1,2,13,42,7], stackgroup: "1", mode: "lines", line: {color: "rgb(248, 156, 116)"}, fillpattern: {shape: ""} },
+    { name: "machine learning", x: [2017,2018,2019,2020,2021,2022,2023,2024,2025,2026,2027], y: [3,4,3,3,1,4,8,11,10,128,47], stackgroup: "1", mode: "lines", line: {color: "rgb(220, 176, 242)"}, fillpattern: {shape: ""} },
+    { name: "deep learning", x: [2018,2019,2020,2021,2022,2023,2024,2025,2026,2027], y: [1,3,3,5,2,14,26,34,266,32], stackgroup: "1", mode: "lines", line: {color: "rgb(135, 197, 95)"}, fillpattern: {shape: ""} },
+    { name: "transformer", x: [2022,2023,2024,2025,2026,2027], y: [1,1,1,9,49,4], stackgroup: "1", mode: "lines", line: {color: "rgb(158, 185, 243)"}, fillpattern: {shape: ""} },
+    { name: "eeg", x: [2024,2025,2026], y: [1,2,65], stackgroup: "1", mode: "lines", line: {color: "rgb(254, 136, 177)"}, fillpattern: {shape: ""} },
+    { name: "federated learning", x: [2024,2025,2026,2027], y: [1,1,84,9], stackgroup: "1", mode: "lines", line: {color: "rgb(201, 219, 116)"}, fillpattern: {shape: ""} },
+    { name: "generative ai", x: [2025,2026,2027], y: [2,15,45], stackgroup: "1", mode: "lines", line: {color: "rgb(139, 224, 164)"}, fillpattern: {shape: ""} },
+    { name: "large language models", x: [2025,2026,2027], y: [1,48,38], stackgroup: "1", mode: "lines", line: {color: "rgb(180, 151, 231)"}, fillpattern: {shape: ""} }
+  ];
+  Plotly.newPlot('themeriver', themeRiverData, { 
+    ...layoutDefaults, 
+    margin: { t: 20, l: 40, r: 20, b: 40 },
+    hovermode: 'closest', 
+    xaxis: { title: 'Year', gridcolor: '#f1f5f9' }, 
+    yaxis: { title: 'Frequency', gridcolor: '#f1f5f9' } 
+  }, config);
+
+  // 3. Heatmap Data
+  const heatmapData = [{
+    type: "heatmap",
+    x: [2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025,2026,2027],
+    y: ["deep learning","machine learning","artificial intelligence","federated learning","large language models","virtual reality","eeg","computer vision","transformer","generative ai","fpga","computer-aided design","edge computing","attention mechanism","reinforcement learning","emotion recognition","contrastive learning","convolutional neural network","explainable ai","graph neural networks"],
+    z: [[0,0,0,1,3,3,5,2,14,26,34,266,32],[0,0,3,4,3,3,1,4,8,11,10,128,47],[1,0,2,1,0,2,3,3,7,16,8,60,111],[0,0,0,0,0,0,0,0,0,1,1,84,9],[0,0,0,0,0,0,0,0,0,0,1,48,38],[0,1,0,0,0,1,0,1,2,17,6,36,7],[0,0,0,0,0,0,0,0,0,1,2,65,0],[0,0,1,1,0,0,0,0,1,2,13,42,7],[0,0,0,0,0,0,0,1,1,1,9,49,4],[0,0,0,0,0,0,0,0,0,0,2,15,45],[1,0,0,0,0,0,0,0,1,0,0,55,1],[0,0,0,0,0,0,0,0,6,19,21,11,0],[0,0,0,0,0,0,0,0,0,0,0,50,7],[0,0,0,0,0,0,1,0,0,1,7,45,2],[0,0,0,0,0,1,0,0,1,4,2,45,2],[0,0,0,0,1,1,0,0,1,1,11,39,0],[0,0,0,0,0,0,0,0,1,1,5,38,5],[0,0,0,1,1,0,0,1,3,3,2,35,3],[0,0,0,0,0,0,0,0,0,2,1,24,21],[0,0,0,0,0,0,1,2,1,3,7,29,5]],
+    colorscale: [[0.0,"rgb(247,251,255)"],[0.125,"rgb(222,235,247)"],[0.25,"rgb(198,219,239)"],[0.375,"rgb(158,202,225)"],[0.5,"rgb(107,174,214)"],[0.625,"rgb(66,146,198)"],[0.75,"rgb(33,113,181)"],[0.875,"rgb(8,81,156)"],[1.0,"rgb(8,48,107)"]]
+  }];
+  Plotly.newPlot('heatmap', heatmapData, { 
+    ...layoutDefaults, 
+    margin: {l: 200, r: 20, t: 20, b: 40}, 
+    xaxis: { title: 'Year' }, 
+    yaxis: { title: 'Keyword', autorange: 'reversed' } 
+  }, config);
+
+  // 4. Quadrant Data
+  const quadrantData = [{
+    type: "scatter",
+    mode: "markers+text",
+    textposition: "top right",
+    x: [3.629,2.867,3.292,6.584,6.459,3.481,6.108,4.022,4.415,5.977,4.247,2.893,5.857,4.807,4.169,3.700,4.643,2.652,5.614,3.169,4.357,3.285,2.129,4.321,2.887,3.700,2.280,5.321,4.169,4.129,2.369,4.129,5.129,3.0,2.954,5.044,5.044,1.893,5.0,4.954,3.222,4.857,-1.459,3.807,4.857,3.807,4.807,4.807,1.652,2.643],
+    y: [358,196,195,95,87,66,68,64,63,62,56,51,57,55,53,51,49,43,48,44,40,38,34,39,36,38,33,39,35,34,30,34,34,31,30,32,32,25,31,30,27,28,7,27,28,27,27,27,21,24],
+    text: ["deep learning","machine learning","artificial intelligence","federated learning","large language models","virtual reality","eeg","computer vision","transformer","generative ai","fpga","computer-aided design","edge computing","attention mechanism","reinforcement learning","emotion recognition","contrastive learning","convolutional neural network","explainable ai","graph neural networks","self-supervised learning","cad","classification","electroencephalography","transfer learning","anomaly detection","neural networks","large language model","cybersecurity","electroencephalogram","human-computer interaction","graph neural network","multimodal fusion","data augmentation","internet of things","spiking neural networks","digital twin","convolutional neural networks","knowledge distillation","electrocardiogram","object detection","explainable artificial intelligence","computational complexity","natural language processing","edge ai","internet of things (iot)","3d reconstruction","generative artificial intelligence","computer aided design","feature extraction"],
+    marker: {
+      size: [386,222,214,95,87,71,68,67,65,62,58,57,57,56,55,54,50,49,48,48,41,41,41,40,40,40,39,39,36,35,35,35,34,34,33,32,32,31,31,30,29,28,28,28,28,28,27,27,27,27],
+      sizemode: "area",
+      sizeref: 0.24125,
+      color: [3.629,2.867,3.292,6.584,6.459,3.481,6.108,4.022,4.415,5.977,4.247,2.893,5.857,4.807,4.169,3.700,4.643,2.652,5.614,3.169,4.357,3.285,2.129,4.321,2.887,3.700,2.280,5.321,4.169,4.129,2.369,4.129,5.129,3.0,2.954,5.044,5.044,1.893,5.0,4.954,3.222,4.857,-1.459,3.807,4.857,3.807,4.807,4.807,1.652,2.643],
+      colorscale: [[0.0,"rgb(49,54,149)"],[0.1,"rgb(69,117,180)"],[0.2,"rgb(116,173,209)"],[0.3,"rgb(171,217,233)"],[0.4,"rgb(224,243,248)"],[0.5,"rgb(255,255,191)"],[0.6,"rgb(254,224,144)"],[0.7,"rgb(253,174,97)"],[0.8,"rgb(244,109,67)"],[0.9,"rgb(215,48,39)"],[1.0,"rgb(165,0,38)"]]
+    }
+  }];
+  Plotly.newPlot('quadrant', quadrantData, { 
+    ...layoutDefaults, 
+    margin: { t: 20, l: 40, r: 20, b: 40 },
+    xaxis: { title: 'Normalized prevalence growth', gridcolor: '#f1f5f9', zerolinecolor: '#cbd5e1' }, 
+    yaxis: { title: 'Documents (2024-Present)', gridcolor: '#f1f5f9', zerolinecolor: '#cbd5e1' },
+    shapes: [
+      { type: 'line', x0: 0, x1: 0, xref: 'x', y0: 0, y1: 1, yref: 'paper', line: { color: '#94a3b8', dash: 'dash' } },
+      { type: 'line', x0: 0, x1: 1, xref: 'paper', y0: 37, y1: 37, yref: 'y', line: { color: '#94a3b8', dash: 'dash' } }
+    ]
+  }, config);
+
+
+  // 5. Vis.js Network
+  const networkNodes = [
+    {"color": "#d55042", "font": {"color": "black"}, "id": "deep learning", "label": "deep learning", "shape": "dot", "size": 386, "title": "คำ: deep learning<br>เจอ: 386 ครั้ง<br>ปีเฉลี่ย: 2025.5"},
+    {"color": "#e57058", "font": {"color": "black"}, "id": "computer-aided design", "label": "computer-aided design", "shape": "dot", "size": 57, "title": "คำ: computer-aided design<br>เจอ: 57 ครั้ง<br>ปีเฉลี่ย: 2024.6"},
+    {"color": "#d0473d", "font": {"color": "black"}, "id": "transformer", "label": "transformer", "shape": "dot", "size": 65, "title": "คำ: transformer<br>เจอ: 65 ครั้ง<br>ปีเฉลี่ย: 2025.8"},
+    {"color": "#e97a5f", "font": {"color": "black"}, "id": "cad", "label": "cad", "shape": "dot", "size": 41, "title": "คำ: cad<br>เจอ: 41 ครั้ง<br>ปีเฉลี่ย: 2024.3"},
+    {"color": "#d55042", "font": {"color": "black"}, "id": "computer vision", "label": "computer vision", "shape": "dot", "size": 67, "title": "คำ: computer vision<br>เจอ: 67 ครั้ง<br>ปีเฉลี่ย: 2025.6"},
+    {"color": "#cf453c", "font": {"color": "black"}, "id": "artificial intelligence", "label": "artificial intelligence", "shape": "dot", "size": 214, "title": "คำ: artificial intelligence<br>เจอ: 214 ครั้ง<br>ปีเฉลี่ย: 2025.9"},
+    {"color": "#d0473d", "font": {"color": "black"}, "id": "attention mechanism", "label": "attention mechanism", "shape": "dot", "size": 56, "title": "คำ: attention mechanism<br>เจอ: 56 ครั้ง<br>ปีเฉลี่ย: 2025.8"},
+    {"color": "#d75445", "font": {"color": "black"}, "id": "transfer learning", "label": "transfer learning", "shape": "dot", "size": 40, "title": "คำ: transfer learning<br>เจอ: 40 ครั้ง<br>ปีเฉลี่ย: 2025.5"},
+    {"color": "#cc403a", "font": {"color": "black"}, "id": "anomaly detection", "label": "anomaly detection", "shape": "dot", "size": 40, "title": "คำ: anomaly detection<br>เจอ: 40 ครั้ง<br>ปีเฉลี่ย: 2026.0"},
+    {"color": "#d95847", "font": {"color": "black"}, "id": "convolutional neural network", "label": "convolutional neural network", "shape": "dot", "size": 49, "title": "คำ: convolutional neural network<br>เจอ: 49 ครั้ง<br>ปีเฉลี่ย: 2025.3"},
+    {"color": "#d75445", "font": {"color": "black"}, "id": "machine learning", "label": "machine learning", "shape": "dot", "size": 222, "title": "คำ: machine learning<br>เจอ: 222 ครั้ง<br>ปีเฉลี่ย: 2025.4"},
+    {"color": "#dc5d4a", "font": {"color": "black"}, "id": "neural networks", "label": "neural networks", "shape": "dot", "size": 39, "title": "คำ: neural networks<br>เจอ: 39 ครั้ง<br>ปีเฉลี่ย: 2025.2"},
+    {"color": "#c43032", "font": {"color": "black"}, "id": "explainable ai", "label": "explainable ai", "shape": "dot", "size": 48, "title": "คำ: explainable ai<br>เจอ: 48 ครั้ง<br>ปีเฉลี่ย: 2026.3"},
+    {"color": "#d44e41", "font": {"color": "black"}, "id": "electroencephalography", "label": "electroencephalography", "shape": "dot", "size": 40, "title": "คำ: electroencephalography<br>เจอ: 40 ครั้ง<br>ปีเฉลี่ย: 2025.6"},
+    {"color": "#cd423b", "font": {"color": "black"}, "id": "eeg", "label": "eeg", "shape": "dot", "size": 68, "title": "คำ: eeg<br>เจอ: 68 ครั้ง<br>ปีเฉลี่ย: 2025.9"},
+    {"color": "#d44e41", "font": {"color": "black"}, "id": "electroencephalogram", "label": "electroencephalogram", "shape": "dot", "size": 35, "title": "คำ: electroencephalogram<br>เจอ: 35 ครั้ง<br>ปีเฉลี่ย: 2025.6"},
+    {"color": "#e36b54", "font": {"color": "black"}, "id": "classification", "label": "classification", "shape": "dot", "size": 41, "title": "คำ: classification<br>เจอ: 41 ครั้ง<br>ปีเฉลี่ย: 2024.8"},
+    {"color": "#ca3b37", "font": {"color": "black"}, "id": "federated learning", "label": "federated learning", "shape": "dot", "size": 95, "title": "คำ: federated learning<br>เจอ: 95 ครั้ง<br>ปีเฉลี่ย: 2026.1"},
+    {"color": "#cd423b", "font": {"color": "black"}, "id": "contrastive learning", "label": "contrastive learning", "shape": "dot", "size": 50, "title": "คำ: contrastive learning<br>เจอ: 50 ครั้ง<br>ปีเฉลี่ย: 2025.9"},
+    {"color": "#d75445", "font": {"color": "black"}, "id": "emotion recognition", "label": "emotion recognition", "shape": "dot", "size": 54, "title": "คำ: emotion recognition<br>เจอ: 54 ครั้ง<br>ปีเฉลี่ย: 2025.5"},
+    {"color": "#cf453c", "font": {"color": "black"}, "id": "self-supervised learning", "label": "self-supervised learning", "shape": "dot", "size": 41, "title": "คำ: self-supervised learning<br>เจอ: 41 ครั้ง<br>ปีเฉลี่ย: 2025.9"},
+    {"color": "#c83836", "font": {"color": "black"}, "id": "edge computing", "label": "edge computing", "shape": "dot", "size": 57, "title": "คำ: edge computing<br>เจอ: 57 ครั้ง<br>ปีเฉลี่ย: 2026.1"},
+    {"color": "#cb3e38", "font": {"color": "black"}, "id": "cybersecurity", "label": "cybersecurity", "shape": "dot", "size": 36, "title": "คำ: cybersecurity<br>เจอ: 36 ครั้ง<br>ปีเฉลี่ย: 2026.0"},
+    {"color": "#d0473d", "font": {"color": "black"}, "id": "fpga", "label": "fpga", "shape": "dot", "size": 58, "title": "คำ: fpga<br>เจอ: 58 ครั้ง<br>ปีเฉลี่ย: 2025.8"},
+    {"color": "#d24b40", "font": {"color": "black"}, "id": "reinforcement learning", "label": "reinforcement learning", "shape": "dot", "size": 55, "title": "คำ: reinforcement learning<br>เจอ: 55 ครั้ง<br>ปีเฉลี่ย: 2025.7"},
+    {"color": "#bb1b2c", "font": {"color": "black"}, "id": "generative ai", "label": "generative ai", "shape": "dot", "size": 62, "title": "คำ: generative ai<br>เจอ: 62 ครั้ง<br>ปีเฉลี่ย: 2026.7"},
+    {"color": "#dd5f4b", "font": {"color": "black"}, "id": "virtual reality", "label": "virtual reality", "shape": "dot", "size": 71, "title": "คำ: virtual reality<br>เจอ: 71 ครั้ง<br>ปีเฉลี่ย: 2025.2"},
+    {"color": "#c12b30", "font": {"color": "black"}, "id": "large language models", "label": "large language models", "shape": "dot", "size": 87, "title": "คำ: large language models<br>เจอ: 87 ครั้ง<br>ปีเฉลี่ย: 2026.4"},
+    {"color": "#d65244", "font": {"color": "black"}, "id": "graph neural networks", "label": "graph neural networks", "shape": "dot", "size": 48, "title": "คำ: graph neural networks<br>เจอ: 48 ครั้ง<br>ปีเฉลี่ย: 2025.5"},
+    {"color": "#c83836", "font": {"color": "black"}, "id": "large language model", "label": "large language model", "shape": "dot", "size": 39, "title": "คำ: large language model<br>เจอ: 39 ครั้ง<br>ปีเฉลี่ย: 2026.2"}
+  ];
+
+  const networkEdges = [
+    {from: "deep learning", to: "computer-aided design", value: 11},
+    {from: "deep learning", to: "transformer", value: 10},
+    {from: "deep learning", to: "cad", value: 9},
+    {from: "deep learning", to: "computer vision", value: 15},
+    {from: "deep learning", to: "artificial intelligence", value: 27},
+    {from: "deep learning", to: "attention mechanism", value: 12},
+    {from: "deep learning", to: "transfer learning", value: 12},
+    {from: "deep learning", to: "anomaly detection", value: 5},
+    {from: "deep learning", to: "convolutional neural network", value: 12},
+    {from: "deep learning", to: "machine learning", value: 33},
+    {from: "deep learning", to: "neural networks", value: 8},
+    {from: "deep learning", to: "explainable ai", value: 8},
+    {from: "deep learning", to: "electroencephalography", value: 9},
+    {from: "deep learning", to: "eeg", value: 7},
+    {from: "deep learning", to: "electroencephalogram", value: 9},
+    {from: "deep learning", to: "classification", value: 10},
+    {from: "deep learning", to: "federated learning", value: 3},
+    {from: "deep learning", to: "contrastive learning", value: 4},
+    {from: "deep learning", to: "emotion recognition", value: 11},
+    {from: "deep learning", to: "self-supervised learning", value: 6},
+    {from: "deep learning", to: "edge computing", value: 4},
+    {from: "deep learning", to: "cybersecurity", value: 3},
+    {from: "machine learning", to: "artificial intelligence", value: 32},
+    {from: "machine learning", to: "explainable ai", value: 8},
+    {from: "machine learning", to: "computer vision", value: 5},
+    {from: "machine learning", to: "cybersecurity", value: 9},
+    {from: "machine learning", to: "federated learning", value: 4},
+    {from: "machine learning", to: "transformer", value: 5},
+    {from: "machine learning", to: "convolutional neural network", value: 3},
+    {from: "machine learning", to: "anomaly detection", value: 5},
+    {from: "machine learning", to: "neural networks", value: 5},
+    {from: "machine learning", to: "fpga", value: 5},
+    {from: "machine learning", to: "reinforcement learning", value: 3},
+    {from: "machine learning", to: "classification", value: 3},
+    {from: "artificial intelligence", to: "computer-aided design", value: 7},
+    {from: "artificial intelligence", to: "cad", value: 5},
+    {from: "artificial intelligence", to: "explainable ai", value: 6},
+    {from: "artificial intelligence", to: "computer vision", value: 10},
+    {from: "artificial intelligence", to: "generative ai", value: 4},
+    {from: "artificial intelligence", to: "reinforcement learning", value: 3},
+    {from: "artificial intelligence", to: "virtual reality", value: 4},
+    {from: "artificial intelligence", to: "cybersecurity", value: 4},
+    {from: "artificial intelligence", to: "neural networks", value: 4},
+    {from: "artificial intelligence", to: "large language models", value: 3},
+    {from: "federated learning", to: "edge computing", value: 8},
+    {from: "federated learning", to: "cybersecurity", value: 5},
+    {from: "federated learning", to: "explainable ai", value: 5},
+    {from: "federated learning", to: "electroencephalography", value: 3},
+    {from: "federated learning", to: "transfer learning", value: 4},
+    {from: "large language models", to: "generative ai", value: 3},
+    {from: "large language models", to: "reinforcement learning", value: 3},
+    {from: "virtual reality", to: "cad", value: 6},
+    {from: "eeg", to: "explainable ai", value: 3},
+    {from: "eeg", to: "transformer", value: 3},
+    {from: "eeg", to: "classification", value: 4},
+    {from: "eeg", to: "emotion recognition", value: 7},
+    {from: "eeg", to: "attention mechanism", value: 4},
+    {from: "transformer", to: "attention mechanism", value: 3},
+    {from: "transformer", to: "explainable ai", value: 5},
+    {from: "fpga", to: "edge computing", value: 4},
+    {from: "attention mechanism", to: "electroencephalogram", value: 5},
+    {from: "attention mechanism", to: "emotion recognition", value: 5},
+    {from: "emotion recognition", to: "electroencephalogram", value: 7},
+    {from: "contrastive learning", to: "graph neural networks", value: 3},
+    {from: "contrastive learning", to: "self-supervised learning", value: 3},
+    {from: "convolutional neural network", to: "electroencephalogram", value: 6},
+    {from: "convolutional neural network", to: "classification", value: 4},
+    {from: "explainable ai", to: "cybersecurity", value: 3},
+    {from: "explainable ai", to: "transfer learning", value: 3},
+    {from: "classification", to: "electroencephalogram", value: 4},
+    {from: "anomaly detection", to: "cybersecurity", value: 3}
+  ];
+
+  const container = document.getElementById('network');
+  const networkData = { nodes: new vis.DataSet(networkNodes), edges: new vis.DataSet(networkEdges) };
+  const options = {
+    physics: {
+      enabled: true,
+      repulsion: {
+        centralGravity: 0.2,
+        damping: 0.09,
+        nodeDistance: 250,
+        springConstant: 0.05,
+        springLength: 200
+      },
+      solver: "repulsion",
+      stabilization: {
+        enabled: true,
+        fit: true,
+        iterations: 1000,
+        onlyDynamicEdges: false,
+        updateInterval: 50
+      }
+    },
+    edges: { smooth: true, color: { inherit: true } },
+    interaction: { hover: true, dragNodes: true }
+  };
+  const network = new vis.Network(container, networkData, options);
+
+  // Setup Select Dropdown for Network
+  const select = document.getElementById('node-select');
+  
+  // Sort nodes alphabetically for dropdown
+  const sortedNodes = [...networkNodes].sort((a, b) => a.label.localeCompare(b.label));
+  
+  sortedNodes.forEach(node => {
+    const opt = document.createElement('option');
+    opt.value = node.id;
+    opt.textContent = node.label;
+    select.appendChild(opt);
+  });
+
+  select.addEventListener('change', (e) => {
+    const nodeId = e.target.value;
+    if (nodeId) {
+      network.selectNodes([nodeId]);
+      network.focus(nodeId, { scale: 1.5, animation: true });
+    } else {
+      network.unselectAll();
+      network.fit({ animation: true });
+    }
+  });
+
+  document.getElementById('reset-btn').addEventListener('click', () => {
+    select.value = '';
+    network.unselectAll();
+    network.fit({ animation: true });
+  });
+
+</script>
+</body>
+</html>
